@@ -40,4 +40,3 @@ local_py/build/
 local_py/.pytest_cache/
 local_py/htmlcov/
 local_py/.coverage
-local_py/
