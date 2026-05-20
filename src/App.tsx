@@ -3,6 +3,9 @@ import { useWebLLM } from "./hooks/useWebLLM";
 import type { ChatMessage } from "./hooks/useWebLLM";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+
+// P2: Maximum messages to keep per session in LocalStorage (prevents 5MB quota overflow)
+const MAX_SESSION_MESSAGES = 40;
 import {
   Cpu,
   Send,
@@ -95,10 +98,14 @@ export default function App() {
     setActiveSessionId(defaultSession.id);
   }, []);
 
-  // Save sessions to LocalStorage on changes
+  // Save sessions to LocalStorage on changes (P2: truncate to MAX_SESSION_MESSAGES per session)
   useEffect(() => {
     if (sessions.length > 0) {
-      localStorage.setItem("gemma_chat_sessions", JSON.stringify(sessions));
+      const truncated = sessions.map((s) => ({
+        ...s,
+        messages: s.messages.slice(-MAX_SESSION_MESSAGES),
+      }));
+      localStorage.setItem("gemma_chat_sessions", JSON.stringify(truncated));
     }
   }, [sessions]);
 
@@ -681,7 +688,8 @@ export default function App() {
                                       code({ className, children, ...props }) {
                                         const match = /language-(\w+)/.exec(className || "");
                                         const codeString = String(children).replace(/\n$/, "");
-                                        const codeBlockId = `code_${index}_${Math.random().toString(36).substr(2, 5)}`;
+                                        // P6: stable ID using message index + child content hash, not Math.random()
+                                        const codeBlockId = `code_${index}_${codeString.length}_${codeString.slice(0, 8).replace(/\W/g, "")}`;
                                         
                                         return match ? (
                                           <div className="relative group my-2 border border-purple-950/50 rounded-lg overflow-hidden">

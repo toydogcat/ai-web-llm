@@ -25,3 +25,19 @@ dist-ssr
 
 # temp files
 TMP/
+
+# Python local version
+local_py/__pycache__/
+local_py/*.pyc
+local_py/*.pyo
+local_py/.venv/
+local_py/venv/
+local_py/env/
+local_py/.env
+local_py/*.egg-info/
+local_py/dist/
+local_py/build/
+local_py/.pytest_cache/
+local_py/htmlcov/
+local_py/.coverage
+local_py/

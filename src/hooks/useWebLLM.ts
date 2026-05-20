@@ -1,11 +1,57 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { CreateWebWorkerMLCEngine } from "@mlc-ai/web-llm";
 import type { MLCEngineInterface, InitProgressReport } from "@mlc-ai/web-llm";
+import { evaluate } from "mathjs";
 
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
 }
+
+// ─── Module-Level Local Tool Helpers ─────────────────────────────────────────
+// These are defined at module level (outside the hook) for stability.
+
+function getCurrentTime(): string {
+  return new Date().toLocaleString("zh-TW", { timeZoneName: "short" });
+}
+
+function runJsCalculation(expression: string): string {
+  try {
+    // Use mathjs.evaluate() — a proper sandboxed math expression parser
+    // It supports: arithmetic, trigonometry, exponentiation, matrices, units, etc.
+    // It does NOT have access to JS globals, window, fetch, etc.
+    const result = evaluate(expression);
+    if (result === undefined || result === null) {
+      return "計算無法得出有效數值。";
+    }
+    return String(result);
+  } catch (e) {
+    return `計算錯誤: ${e instanceof Error ? e.message : String(e)}`;
+  }
+}
+
+async function searchWikipedia(query: string): Promise<string> {
+  try {
+    const url = `https://zh.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    const data = await res.json();
+    const searchResults = data.query?.search || [];
+    if (searchResults.length === 0) {
+      return `找不到與「${query}」相關的維基百科條目。`;
+    }
+    return searchResults
+      .slice(0, 3)
+      .map((item: { title: string; snippet: string }, i: number) => {
+        const cleanSnippet = item.snippet.replace(/<\/?[^>]+(>|$)/g, "");
+        return `[搜尋結果 ${i + 1}] 標題: ${item.title}\n內容摘要: ${cleanSnippet}\n`;
+      })
+      .join("\n");
+  } catch (e) {
+    return `搜尋發生錯誤: ${e instanceof Error ? e.message : String(e)}`;
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const useWebLLM = () => {
   const [webGpuSupported, setWebGpuSupported] = useState<boolean>(true);
@@ -111,48 +157,6 @@ export const useWebLLM = () => {
     }
   }, [webGpuSupported]);
 
-// Standalone Local Tool Helper Functions
-const getCurrentTime = (): string => {
-  return new Date().toLocaleString("zh-TW", { timeZoneName: "short" });
-};
-
-const runJsCalculation = (expression: string): string => {
-  try {
-    // Sanitize to only permit standard mathematical expressions and Math functions
-    const sanitized = expression.replace(/[^0-9+\-*/().\s,Math\.sinMath\.cosMath\.tanMath\.sqrtMath\.logMath\.powMath\.PIMath\.EMath\.absMath\.ceilMath\.floorMath\.roundMath\.minMath\.max]/g, "");
-    // Run the calculation in sandboxed function evaluator
-    const result = new Function(`return ${sanitized}`)();
-    if (result === undefined || result === null || isNaN(Number(result))) {
-      return "計算無法得出有效數值。";
-    }
-    return String(result);
-  } catch (e) {
-    return `計算錯誤: ${e instanceof Error ? e.message : String(e)}`;
-  }
-};
-
-const searchWikipedia = async (query: string): Promise<string> => {
-  try {
-    const url = `https://zh.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
-    const data = await res.json();
-    const searchResults = data.query?.search || [];
-    if (searchResults.length === 0) {
-      return `找不到與「${query}」相關的維基百科條目。`;
-    }
-    return searchResults
-      .slice(0, 3)
-      .map((item: any, i: number) => {
-        const cleanSnippet = item.snippet.replace(/<\/?[^>]+(>|$)/g, "");
-        return `[搜尋結果 ${i + 1}] 標題: ${item.title}\n內容摘要: ${cleanSnippet}\n`;
-      })
-      .join("\n");
-  } catch (e) {
-    return `搜尋發生錯誤: ${e instanceof Error ? e.message : String(e)}`;
-  }
-};
-
   // 4. Send a message list and receive streaming tokens with Agentic Tool Calling
   const sendMessage = useCallback(async (
     messages: ChatMessage[],
@@ -174,6 +178,7 @@ const searchWikipedia = async (query: string): Promise<string> => {
         const completion = await engine.chat.completions.create({
           messages: currentMessages,
           stream: true,
+          max_tokens: 2048, // P10: prevent KV cache overflow
         });
 
         for await (const chunk of completion) {
