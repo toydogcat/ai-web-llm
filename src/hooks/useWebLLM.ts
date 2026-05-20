@@ -184,10 +184,10 @@ const searchWikipedia = async (query: string): Promise<string> => {
           }
         }
 
-        // Parse responseText for tool calls
-        const timeMatch = responseText.match(/\[CALL:\s*get_current_time\(\)\]/);
-        const mathMatch = responseText.match(/\[CALL:\s*run_js_calculation\(expression="([^"]+)"\)\]/);
-        const searchMatch = responseText.match(/\[CALL:\s*search_wikipedia\(query="([^"]+)"\)\]/);
+        // Parse responseText for tool calls with high tolerance for whitespaces
+        const timeMatch = responseText.match(/\[CALL:\s*get_current_time\s*\(\s*\)\s*\]/);
+        const mathMatch = responseText.match(/\[CALL:\s*run_js_calculation\s*\(\s*expression\s*=\s*"([^"]+)"\s*\)\s*\]/);
+        const searchMatch = responseText.match(/\[CALL:\s*search_wikipedia\s*\(\s*query\s*=\s*"([^"]+)"\s*\)\s*\]/);
 
         if (timeMatch || mathMatch || searchMatch) {
           let toolOutput = "";
@@ -208,8 +208,8 @@ const searchWikipedia = async (query: string): Promise<string> => {
             toolOutput = await searchWikipedia(query);
           }
 
-          // Accumulate generated text and display tool results
-          fullResponse += responseText + `\n\n*(🛠️ 本機執行工具 ${matchedCall}，獲得輸出結果如下：)*\n\`\`\`text\n${toolOutput}\n\`\`\`\n\n*(正在分析結果並產生最終回答...)*\n\n`;
+          // Accumulate generated text and append the clean visual divider
+          fullResponse += responseText + `\n\n*(🛠️ 本機執行工具 ${matchedCall}，獲得輸出結果如下：)*\n\`\`\`text\n${toolOutput}\n\`\`\`\n\n<!-- ANSWER -->`;
           onChunk(fullResponse);
 
           // Push the tool run results into conversation context to guide the model's next response

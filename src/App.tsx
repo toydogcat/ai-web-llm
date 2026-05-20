@@ -650,56 +650,82 @@ export default function App() {
                         >
                           {msg.role === "user" ? (
                             <p className="whitespace-pre-wrap">{msg.content}</p>
-                          ) : (
-                            /* Markdown rendering + GFM + Custom code syntax with Copy Button */
-                            <ReactMarkdown
-                              remarkPlugins={[remarkGfm]}
-                              components={{
-                                code({ className, children, ...props }) {
-                                  const match = /language-(\w+)/.exec(className || "");
-                                  const codeString = String(children).replace(/\n$/, "");
-                                  const codeBlockId = `code_${index}_${Math.random().toString(36).substr(2, 5)}`;
-                                  
-                                  return match ? (
-                                    <div className="relative group my-2 border border-purple-950/50 rounded-lg overflow-hidden">
-                                      <div className="flex justify-between items-center px-4 py-1.5 bg-black/60 border-b border-purple-900/20 text-[10px] text-slate-400 font-mono">
-                                        <span className="uppercase tracking-wider">{match[1]}</span>
-                                        <button
-                                          type="button"
-                                          onClick={() => handleCopyCode(codeString, codeBlockId)}
-                                          className="hover:text-cyan-400 transition-colors flex items-center gap-1"
-                                          title="Copy Code"
-                                        >
-                                          {copiedId === codeBlockId ? (
-                                            <>
-                                              <Check className="w-3 h-3 text-emerald-400" />
-                                              <span className="text-emerald-400">Copied</span>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <Copy className="w-3 h-3" />
-                                              <span>Copy</span>
-                                            </>
-                                          )}
-                                        </button>
-                                      </div>
-                                      <pre className="!mt-0 !bg-black/40 overflow-x-auto p-4 max-h-72">
-                                        <code className="text-xs leading-relaxed" {...props}>
-                                          {children}
-                                        </code>
-                                      </pre>
+                          ) : (() => {
+                            const parts = msg.content.split("<!-- ANSWER -->");
+                            const thinkingPart = parts.length > 1 ? parts.slice(0, -1).join("\n\n") : "";
+                            const answerPart = parts[parts.length - 1];
+
+                            return (
+                              <div className="space-y-3">
+                                {thinkingPart && (
+                                  <details className="group border border-purple-500/20 bg-purple-950/20 rounded-xl overflow-hidden backdrop-blur-sm transition-all" open>
+                                    <summary className="flex justify-between items-center px-4 py-2.5 text-[11px] font-mono text-purple-300 bg-purple-950/40 hover:bg-purple-950/60 cursor-pointer list-none select-none">
+                                      <span className="flex items-center gap-2">
+                                        <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                                        <span>思考與工具調用 (Thinking & Tools)</span>
+                                      </span>
+                                      <span className="text-[10px] text-purple-400 group-open:rotate-180 transition-transform duration-200">▼</span>
+                                    </summary>
+                                    <div className="p-3 border-t border-purple-500/10 text-xs font-mono bg-black/40 overflow-x-auto text-purple-200/90 leading-relaxed max-h-64 scrollbar-thin">
+                                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                        {thinkingPart}
+                                      </ReactMarkdown>
                                     </div>
-                                  ) : (
-                                    <code className="bg-purple-950/40 text-purple-300 px-1.5 py-0.5 rounded font-mono text-xs" {...props}>
-                                      {children}
-                                    </code>
-                                  );
-                                },
-                              }}
-                            >
-                              {msg.content || "*(Generating response...)*"}
-                            </ReactMarkdown>
-                          )}
+                                  </details>
+                                )}
+
+                                <div className="prose prose-invert max-w-none">
+                                  <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                      code({ className, children, ...props }) {
+                                        const match = /language-(\w+)/.exec(className || "");
+                                        const codeString = String(children).replace(/\n$/, "");
+                                        const codeBlockId = `code_${index}_${Math.random().toString(36).substr(2, 5)}`;
+                                        
+                                        return match ? (
+                                          <div className="relative group my-2 border border-purple-950/50 rounded-lg overflow-hidden">
+                                            <div className="flex justify-between items-center px-4 py-1.5 bg-black/60 border-b border-purple-900/20 text-[10px] text-slate-400 font-mono">
+                                              <span className="uppercase tracking-wider">{match[1]}</span>
+                                              <button
+                                                type="button"
+                                                onClick={() => handleCopyCode(codeString, codeBlockId)}
+                                                className="hover:text-cyan-400 transition-colors flex items-center gap-1"
+                                                title="Copy Code"
+                                              >
+                                                {copiedId === codeBlockId ? (
+                                                  <>
+                                                    <Check className="w-3 h-3 text-emerald-400" />
+                                                    <span className="text-emerald-400">Copied</span>
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <Copy className="w-3 h-3" />
+                                                    <span>Copy</span>
+                                                  </>
+                                                )}
+                                              </button>
+                                            </div>
+                                            <pre className="!mt-0 !bg-black/40 overflow-x-auto p-4 max-h-72">
+                                              <code className="text-xs leading-relaxed" {...props}>
+                                                {children}
+                                              </code>
+                                            </pre>
+                                          </div>
+                                        ) : (
+                                          <code className="bg-purple-950/40 text-purple-300 px-1.5 py-0.5 rounded font-mono text-xs" {...props}>
+                                            {children}
+                                          </code>
+                                        );
+                                      },
+                                    }}
+                                  >
+                                    {answerPart || "*(正在彙整結果並產生最終回答...)*"}
+                                  </ReactMarkdown>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
