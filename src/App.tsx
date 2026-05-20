@@ -49,7 +49,12 @@ export default function App() {
   const [activeSessionId, setActiveSessionId] = useState<string>("");
   const [inputMessage, setInputMessage] = useState<string>("");
   const [systemPrompt, setSystemPrompt] = useState<string>(
-    "You are Gemma, a highly helpful, intelligent, and creative AI assistant running entirely locally in the browser via WebGPU."
+    "You are Gemma, a highly helpful, intelligent, and creative AI assistant running entirely locally in the browser via WebGPU.\n\n" +
+    "You have access to the following local tools. If you need to perform an action (e.g. get current time, calculate a complex mathematical equation, or search for external information/news), you MUST output the tool call command in your response exactly as shown below on a single line by itself, and then IMMEDIATELY STOP generating to wait for the system output:\n" +
+    "- To get the current local time: [CALL: get_current_time()]\n" +
+    "- To execute a safe JavaScript mathematical calculation: [CALL: run_js_calculation(expression=\"Math.sqrt(1523) + 45\")]\n" +
+    "- To search info/news on Wikipedia: [CALL: search_wikipedia(query=\"2026 Winter Olympics\")]\n\n" +
+    "Always write your final responses in Traditional Chinese (繁體中文)."
   );
   
   // Visual states
