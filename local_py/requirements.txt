@@ -1,22 +1,26 @@
-# Python dependencies for Gemma Local Chat
+# Gemma Local Chat — Requirements
 # ─────────────────────────────────────────────────────────────
-# These are ALREADY installed in conda env `toby`:
-#   streamlit, torch, transformers, httpx, openai
-# Only install what's missing.
+# 100% Local Agentic RAG System
 # ─────────────────────────────────────────────────────────────
 
-# Required (for toby env — likely already present)
-# streamlit>=1.46.0       ← already in toby ✓
-# transformers>=5.0.0     ← already in toby ✓
-# torch>=2.0.0            ← already in toby ✓
+# Core AI Backend
+ollama>=0.6.2
 
-# Optional: llama.cpp Python binding (FASTEST on CPU, recommended)
-# Install separately with:
-#   conda run -n toby pip install llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
-# llama-cpp-python>=0.2.90
+# Vector Store & RAG
+chromadb>=0.5.0
+sentence-transformers>=3.0.0
+langchain-text-splitters>=0.1.0
+pypdf>=5.0.0
+psycopg2-binary>=2.9.0
+pgvector>=0.2.0
+sqlalchemy>=2.0.0
+python-dotenv>=1.0.0
 
-# Optional: Ollama REST client (easy to install)
-ollama>=0.4.0
 
-# Optional: coloured terminal output for chat.py
+# UI & Terminal
+streamlit>=1.40.0
 colorama>=0.4.6
+
+# Backend options
+# llama-cpp-python>=0.3.0
+# transformers>=4.45.0

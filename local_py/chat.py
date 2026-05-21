@@ -28,6 +28,9 @@ import urllib.parse
 import urllib.request
 import json
 import readline  # noqa: F401  (enables arrow-key history in terminal)
+from dotenv import load_dotenv
+load_dotenv()
+from rag.vector_store import search_docs
 
 # ── Optional colour support ──────────────────────────────────────────────────
 try:
@@ -57,11 +60,12 @@ SYSTEM_PROMPT = (
     "You are Gemma, a highly helpful, intelligent, and creative AI assistant "
     "running entirely locally via Ollama.\n\n"
     "You have access to the following local tools. When you need to perform an action "
-    "(get current time, calculate math, or search Wikipedia), output the tool call "
-    "command on a single line by itself and IMMEDIATELY STOP:\n"
+    "(get current time, calculate math, search Wikipedia, or search local documents), "
+    "output the tool call command on a single line by itself and IMMEDIATELY STOP:\n"
     "- To get the current local time: [CALL: get_current_time()]\n"
     '- To execute a safe mathematical calculation: [CALL: run_math_calculation(expression="sqrt(1523) + 45 * sin(30 * pi / 180)")]\n'
-    '- To search info/news on Wikipedia: [CALL: search_wikipedia(query="2026 Winter Olympics")]\n\n'
+    '- To search info/news on Wikipedia: [CALL: search_wikipedia(query="2026 Winter Olympics")]\n'
+    '- To search YOUR OWN LOCAL DOCUMENTS (PDFs, notes): [CALL: search_local_documents(query="calculus derivatives")]\n\n'
     "Always write your final responses in Traditional Chinese (繁體中文)."
 )
 
@@ -123,10 +127,16 @@ def tool_search_wikipedia(query: str) -> str:
         return f"搜尋發生錯誤: {exc}"
 
 
+def tool_search_local_docs(query: str) -> str:
+    """Semantic search in indexed local PDF/MD files."""
+    return search_docs(query)
+
+
 # ── Tool regex patterns (mirrors the TypeScript version) ─────────────────────
 _RE_TIME   = re.compile(r"\[CALL:\s*get_current_time\s*\(\s*\)\s*\]")
 _RE_MATH   = re.compile(r'\[CALL:\s*run_math_calculation\s*\(\s*expression\s*=\s*"([^"]+)"\s*\)\s*\]')
 _RE_SEARCH = re.compile(r'\[CALL:\s*search_wikipedia\s*\(\s*query\s*=\s*"([^"]+)"\s*\)\s*\]')
+_RE_LOCAL  = re.compile(r'\[CALL:\s*search_local_documents\s*\(\s*query\s*=\s*"([^"]+)"\s*\)\s*\]')
 
 
 def dispatch_tool(response_text: str) -> tuple[str | None, str | None]:
@@ -141,6 +151,9 @@ def dispatch_tool(response_text: str) -> tuple[str | None, str | None]:
     if m := _RE_SEARCH.search(response_text):
         print(f"\n{Fore.CYAN}🔍 正在從維基百科搜尋「{m.group(1)}」...{Style.RESET_ALL}")
         return tool_search_wikipedia(m.group(1)), m.group(0)
+    if m := _RE_LOCAL.search(response_text):
+        print(f"\n{Fore.CYAN}📂 正在搜尋本地文檔「{m.group(1)}」...{Style.RESET_ALL}")
+        return tool_search_local_docs(m.group(1)), m.group(0)
     return None, None
 
 

@@ -28,6 +28,7 @@ TMP/
 
 # Python local version
 local_py/__pycache__/
+local_py/rag/__pycache__/
 local_py/*.pyc
 local_py/*.pyo
 local_py/.venv/
@@ -40,3 +41,9 @@ local_py/build/
 local_py/.pytest_cache/
 local_py/htmlcov/
 local_py/.coverage
+
+# RAG & Private Docs
+local_py/rag/*.pdf
+local_py/rag/knowledge/*.pdf
+local_py/rag/chroma_db/
+
